@@ -44,6 +44,8 @@ try:
 except ImportError:
     os.system("pip install pytz")
     from pytz                                 import timezone
+finally:
+    from pytz                                 import UnknownTimeZoneError
 
 # Load ENV
 load_dotenv("us.env")
@@ -105,7 +107,7 @@ if (HANDLE_DRIVER == "true"):
         from selenium.webdriver.edge.service                          import Service
     elif BROWSER == "firefox":
         from webdriver_manager.firefox                                import GeckoDriverManager
-        from selenium.webdriver.firefox.options                       import Options
+        from selenium.webdriver.firefox.service                       import Service 
 else:
     HANDLE_DRIVER = False
 
@@ -171,9 +173,12 @@ WANTED_IPV6 = os.environ.get("WANTED_IPV6")
 PROXY = os.environ.get("PROXY", "")
 # Populate proxy dictionary for requests
 PROXIES = {"http": f"{PROXY}", "https": f"{PROXY}"}
-
-# Configure timezone
-TZ = timezone(os.environ.get("TZ", "America/New_York"))
+try:
+    # Configure timezone
+    TZ = timezone(os.environ.get("TZ", "America/New_York"))
+except UnknownTimeZoneError:
+    print("Invalid timezone specified in .env, defaulting to America/New_York. Please check https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a list of valid timezones.")
+    TZ = timezone("America/New_York")
 
 # Whether or not to use a timer, and if so, what time to use
 TIMER = os.environ.get("TIMER", "False").lower()
@@ -298,10 +303,7 @@ def get_driver(isMobile = False):
         options = webdriver.FirefoxOptions()
 
     if HEADLESS:
-        if BROWSER == "chrome" or BROWSER == "edge":
-            options.add_argument("--headless")
-        elif BROWSER == "firefox":
-            options.headless = True
+        options.add_argument("--headless")
 
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
